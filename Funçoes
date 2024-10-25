@@ -1,0 +1,54 @@
+Funções de Menu e Auxiliares:
+
+  menu(): Exibe um menu com as opções disponíveis para o usuário. Essas opções envolvem a extração de dados, visualização de arquivos, verificação de registros, consulta de produtos, etc.
+  
+  comparar(): Função de comparação usada pelo qsort para ordenar produtos pelo product_id. Retorna um valor baseado na ordem alfabética dos product_ids.
+
+
+
+
+Funções para Manipulação de Arquivos e Ordenação:
+
+  ordena(): Ordena uma partição de produtos lida em memória usando qsort e salva em um arquivo temporário. Essa função é chamada várias vezes para dividir um grande arquivo em partes menores, ordenando cada uma delas        antes de realizar um merge.
+  
+  merge_files(): Realiza a fusão (merge) dos arquivos temporários ordenados em um arquivo final, mantendo a ordenação. Usa um array de buffers para ler uma entrada de cada arquivo temporário e grava as entradas em ordem     no arquivo final.
+
+
+
+
+Funções para Exclusão e Compactação:
+
+  excluirUsuarioPorId(): Marca um usuário como excluído de forma lógica, mudando o campo excluido para 1 em vez de removê-lo fisicamente.
+  
+  compactarArquivo(): Remove fisicamente os registros marcados como excluídos de um arquivo binário de usuários. Cria um novo arquivo, apenas com os usuários ativos, substituindo o arquivo original.
+
+
+
+
+Funções de Leitura e Escrita de Dados:    
+
+  preencherBinario(): Grava os dados de um usuário e de um produto em seus respectivos arquivos binários.
+  
+  verifica_arq(): Abre um arquivo binário e conta quantos registros ele possui. Exibe o valor do contador, útil para verificar a quantidade de registros armazenados.
+  
+  lerArquivoBin(): Lê um arquivo binário (de usuários ou produtos) e exibe os dados no console, dependendo do parâmetro aux (se aux == 0, lê User; caso contrário, lê Produto).
+  
+  Extrai_csv(): Extrai dados de um arquivo CSV e grava esses dados em arquivos binários separados para usuários e produtos. Essa função faz a leitura linha por linha, usa strtok para separar os campos e os armazena nas structs correspondentes, é possivel limitar os dados que ele lê.
+
+  
+Funções para Ordenação e Remoção de Duplicados:
+
+  OrdenaEMerge(): Chama ordena() para criar partições e, em seguida, merge_files() para mesclar os arquivos ordenados, removendo os arquivos temporários ao final.
+  
+  hash(): Calcula um valor hash para uma string (product_id) usando uma função baseada no algoritmo djb2. Essa função é usada para determinar a posição de um product_id na tabela hash.
+  
+  jaExiste() e adicionarTabela(): Verificam e adicionam, respectivamente, um product_id à tabela hash, evitando duplicações ao processar produtos.
+  
+  remove_repetidos(): Remove produtos duplicados com base no product_id. Armazena os product_ids em uma tabela hash para rastrear duplicados e evita gravação de produtos repetidos. Se um product_id duplicado for       
+  encontrado, ela atualiza o campo elo nos registros de usuário associados.
+
+
+
+Função de Busca:
+
+pesquisa_binaria(): Realiza uma pesquisa binária em um arquivo de produtos binário ordenado para localizar um product_id específico. Retorna o produto encontrado, facilitando a consulta eficiente.
