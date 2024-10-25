@@ -24,7 +24,6 @@ Funções para Exclusão e Compactação:
 
 
 
-
 Funções de Leitura e Escrita de Dados:    
 
   preencherBinario(): Grava os dados de um usuário e de um produto em seus respectivos arquivos binários.
@@ -35,7 +34,9 @@ Funções de Leitura e Escrita de Dados:
   
   Extrai_csv(): Extrai dados de um arquivo CSV e grava esses dados em arquivos binários separados para usuários e produtos. Essa função faz a leitura linha por linha, usa strtok para separar os campos e os armazena nas structs correspondentes, é possivel limitar os dados que ele lê.
 
-  
+
+
+
 Funções para Ordenação e Remoção de Duplicados:
 
   OrdenaEMerge(): Chama ordena() para criar partições e, em seguida, merge_files() para mesclar os arquivos ordenados, removendo os arquivos temporários ao final.
@@ -51,4 +52,7 @@ Funções para Ordenação e Remoção de Duplicados:
 
 Função de Busca:
 
-pesquisa_binaria(): Realiza uma pesquisa binária em um arquivo de produtos binário ordenado para localizar um product_id específico. Retorna o produto encontrado, facilitando a consulta eficiente.
+  pesquisa_binaria(): Realiza uma pesquisa binária em um arquivo de produtos binário ordenado para localizar um product_id específico. Retorna o produto encontrado, facilitando a consulta eficiente.
+
+
+
