@@ -14,7 +14,7 @@ int main() {
 
     printf("Não foi possível alocar %zu bytes.\n", tamanho);
 
-    printf("\n\n um tamanho a se considerar no BUFFER_SIZE é %zu",tamanho/300);
+    printf("\n\n um tamanho a se considerar no BUFFER_SIZE é %zu",tamanho/600);
 
     return 0;
 }
