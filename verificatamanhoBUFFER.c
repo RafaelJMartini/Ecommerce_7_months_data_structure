@@ -9,12 +9,12 @@ int main() {
     while ((buffer = malloc(tamanho)) != NULL) {
         printf("Alocou %zu bytes com sucesso.\n", tamanho);
         free(buffer);
-        tamanho *= 2;  // Tenta alocar mais memória na próxima iteração
+        tamanho *= 2;  // Tenta alocar mais memÃ³ria na prÃ³xima iteraÃ§Ã£o
     }
 
-    printf("Não foi possível alocar %zu bytes.\n", tamanho);
+    printf("NÃ£o foi possÃ­vel alocar %zu bytes.\n", tamanho);
 
-    printf("\n\n um tamanho a se considerar no BUFFER_SIZE é %zu",tamanho/240);
+    printf("\n\n um tamanho a se considerar no BUFFER_SIZE Ã© %zu",tamanho/300);
 
     return 0;
 }
