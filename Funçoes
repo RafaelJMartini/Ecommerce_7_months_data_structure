@@ -32,7 +32,7 @@ Funções de Leitura e Escrita de Dados:
   
   lerArquivoBin(): Lê um arquivo binário (de usuários ou produtos) e exibe os dados no console, dependendo do parâmetro aux (se aux == 0, lê User; caso contrário, lê Produto).
   
-  Extrai_csv(): Extrai dados de um arquivo CSV e grava esses dados em arquivos binários separados para usuários e produtos. Essa função faz a leitura linha por linha, usa strtok para separar os campos e os armazena nas structs correspondentes, é possivel limitar os dados que ele lê.
+  Extrai_csv(): Extrai dados de um arquivo CSV e grava esses dados em arquivos binários separados para usuários e produtos. Essa função faz a leitura linha por linha, usa strtok para separar os campos e os armazena nas structs correspondentes, e é possivel limitar os dados que ele lê.
 
 
 
@@ -52,7 +52,7 @@ Funções para Ordenação e Remoção de Duplicados:
 
 Função de Busca:
 
-  pesquisa_binaria(): Realiza uma pesquisa binária em um arquivo de produtos binário ordenado para localizar um product_id específico. Retorna o produto encontrado, facilitando a consulta eficiente.
+  pesquisa_binaria(): Realiza uma pesquisa binária em um arquivo de produtos binário ordenado para localizar um product_id específico. Retorna o produto encontrado.
 
 
 
