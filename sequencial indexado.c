@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define MAX_LINE_LENGTH 1024
 
@@ -17,8 +18,9 @@
 
 
 
-#define BUFFER_SIZE 7000000 // Ajuste para n„o usar muita memÛria
+#define BUFFER_SIZE 7158278 // Ajuste para n√£o usar muita mem√≥ria
 #define PREFIXO_ARQ "temp_"
+
 
 typedef struct { //struct de User
     unsigned long serial;
@@ -26,8 +28,9 @@ typedef struct { //struct de User
     char event_type[TAMANHO_EVENT_TYPE];
     char user_id[TAMANHO_USER_ID];
     char user_session[TAMANHO_USER_SESSION];
-    int excluido; // 0 para ativo, 1 para excluÌdo
-    long elo; //campo que contem o endereÁo do prÛximo Usu·rio que acessou o mesmo produto, contÈm NULL se foi o ˙ltimo a acessar
+    char product_id[TAMANHO_PRODUCT_ID];
+    int excluido; // 0 para ativo, 1 para exclu√≠do
+    long elo; //campo que contem o endere√ßo do pr√≥ximo Usu√°rio que acessou o mesmo produto, cont√©m NULL se foi o √∫ltimo a acessar
 } User;
 
 typedef struct { //struct de Prod
@@ -37,29 +40,34 @@ typedef struct { //struct de Prod
     char category_code[TAMANHO_CATEGORY_CODE];
     char brand[TAMANHO_BRAND];
     char price[TAMANHO_PRICE];
-    long endereco; //campo que contÈm o endereÁo do primeiro acesso desse produto, ser· formado pegando o serial*sizeof(User) antes de remover os repetidos
+    long endereco; //campo que cont√©m o endere√ßo do primeiro acesso desse produto, ser√° formado pegando o serial*sizeof(User) antes de remover os repetidos
+    int elo;
 } Produto;
 
 void menu(){
     printf("1 - extrair csv original\n");
     printf("2 - Compacta e ordena Arquivo de Produtos\n");
-    printf("3 - Exibir Arquivo de usu·rios\n");
-    printf("4 - Exibir Arquivo de usu·rios ordenado por produtos pesquisados\n");
+    printf("3 - Exibir Arquivo de usu√°rios\n");
+    printf("4 - Exibir Arquivo de usu√°rios ordenado por produtos pesquisados\n");
     printf("5 - Exibir Arquivo de Produtos\n");
     printf("6 - Consultar Produto por ID\n");
-    printf("7 - Consultar todos os usu·rios que pesquisaram por um produto\n");
-    printf("8 - Consultar usu·rio por serial\n");
+    printf("7 - Consultar todos os usu√°rios que pesquisaram por um produto\n");
+    printf("8 - Consultar usu√°rio por serial\n");
+    printf("9 - Inserir registro de usu√°rio\n");
+    printf("10 - Inserir produto\n");
+    printf("11 - Excluir registro de usu√°rio\n");
+    printf("12 - Compactar arquivo\n");
     printf("0 - Sair\n");
 }
 
-// FunÁ„o de comparaÁ„o para ordenar por category_id
+// Fun√ß√£o de compara√ß√£o para ordenar por category_id
 int comparar(const void *a, const void *b) {
     Produto *produtoA = (Produto *)a;
     Produto *produtoB = (Produto *)b;
     return strcmp(produtoA->product_id, produtoB->product_id);
 }
 
-// FunÁ„o para ordenaÁ„o e escrita de uma partiÁ„o
+// Fun√ß√£o para ordena√ß√£o e escrita de uma parti√ß√£o
 void ordena(FILE *input, int part_num, Produto buffer[], size_t contador_leitura) {
     qsort(buffer, contador_leitura, sizeof(Produto), comparar);
 
@@ -70,7 +78,7 @@ void ordena(FILE *input, int part_num, Produto buffer[], size_t contador_leitura
     fclose(temp_file);
 }
 
-// FunÁ„o para fazer o merge dos arquivos tempor·rios
+// Fun√ß√£o para fazer o merge dos arquivos tempor√°rios
 void merge_files(int num_parts) {
 
 
@@ -90,7 +98,7 @@ void merge_files(int num_parts) {
     int *concluidos = malloc(num_parts * sizeof(int));
 
     if (temp_files == NULL || buffer == NULL || concluidos == NULL) {
-        printf("Erro ao alocar memÛria.\n");
+        printf("Erro ao alocar mem√≥ria.\n");
         return;
     }
 
@@ -124,26 +132,115 @@ void merge_files(int num_parts) {
     fclose(output);
 }
 
+Produto *pesquisa_binaria(char *nome_arquivo,char *product_id) {
+    FILE* arquivo = fopen(nome_arquivo,"rb");
+    if(arquivo == NULL){
+        printf("Erro na abertura de arquivo para pesquisa bin√°ria");
+        return 0;
+    }
 
-int excluirUsuarioPorId(const char *nomeArquivo, const char *user_id_excluir) {
+    fseek(arquivo,0,SEEK_END);
+    long tamanho_bytes = ftell(arquivo);  // Tamanho total do arquivo em bytes
+    int total_produtos = tamanho_bytes / sizeof(Produto);  // N√∫mero total de produtos
+    fseek(arquivo, 0, SEEK_SET);
+
+    int inicio = 0;
+    int fim = total_produtos - 1;
+
+    Produto *produto = malloc(sizeof(Produto));
+
+    while (inicio <= fim) {
+        int meio = inicio + (fim - inicio) / 2;
+
+
+        fseek(arquivo,meio*sizeof(Produto),SEEK_SET);
+
+        fread(produto,sizeof(Produto),1,arquivo);
+
+        // Comparar o product_id no meio com o product_id buscado
+        int comparacao = strcmp(produto->product_id, product_id);
+
+        if (comparacao == 0) {
+            // Encontrou o produto
+            fclose(arquivo);
+            return produto;
+        } else if (comparacao < 0) {
+            //product_id buscado √© maior, ajustar in√≠cio
+            inicio = meio + 1;
+        } else {
+            //product_id buscado √© menor, ajustar fim
+            fim = meio - 1;
+        }
+    }
+
+    //n√£o encontrou
+    fclose(arquivo);
+    free(produto);
+    return NULL;
+}
+
+
+int excluirUsuarioPorId(const char *nomeArquivo,char *user_id_excluir, char *nome_prod) {
     FILE *arquivo = fopen(nomeArquivo, "rb+");
     if (arquivo == NULL) {
         printf("Erro ao abrir o arquivo.\n");
         return -1;
     }
 
+
+
+
     User user;
+    User useraux;
+    long endereco = 0;
     int encontrado = 0;
 
-
+    Produto *produto = malloc(sizeof(Produto));
     while (fread(&user, sizeof(User), 1, arquivo) == 1) {
+            printf("(%s) != (%s)\n",user.user_id, user_id_excluir);
+            printf("%d\n",ftell(arquivo));
         if (strcmp(user.user_id, user_id_excluir) == 0 && user.excluido == 0) {
+            produto = pesquisa_binaria(nome_prod,user.product_id);
+            fseek(arquivo,(user.serial*sizeof(User)),SEEK_SET);
+            printf("\nfessek: %d\n",ftell(arquivo));
+            //fseek(arquivo, -sizeof(User), SEEK_CUR);
+            endereco = ftell(arquivo);
+            if(produto->endereco == endereco){ // se for o primeiro da lista
+                if(user.elo != 0){
+                    fseek(arquivo,user.elo,SEEK_SET);
+                    fread(&useraux,sizeof(User),1,arquivo);
+                    useraux.excluido = 1;
+                    fseek(arquivo,-sizeof(User),SEEK_CUR);
+                    fwrite(&useraux,sizeof(User),1,arquivo);
+                    fseek(arquivo,endereco,SEEK_SET);
+                    useraux.excluido = 0;
+                    fwrite(&useraux,sizeof(User),1,arquivo);
+                    encontrado = 1;
+                    printf("Usu√°rio com ID %s exclu√≠do logicamente.\n", user_id_excluir);
+                    break;
+                }
+            }
 
             user.excluido = 1;
-            fseek(arquivo, -sizeof(User), SEEK_CUR);
+            printf("\n\n%d",ftell(arquivo));
             fwrite(&user, sizeof(User), 1, arquivo);
+            printf("\n\n%d",ftell(arquivo));
+            fflush(arquivo);
+            fseek(arquivo, -sizeof(User), SEEK_CUR);
+            fread(&user, sizeof(User), 1, arquivo);
+
+
+            printf("Event time: %s\n", user.event_time);
+            printf("Event type: %s\n", user.event_type);
+            printf("User ID: %s\n", user.user_id);
+            printf("User Session: %s\n", user.user_session);
+            printf("Product ID: %s\n", user.product_id);
+            printf("Excluir: %d\n", user.excluido);
+
+
             encontrado = 1;
-            printf("Usu·rio com ID %s excluÌdo logicamente.\n", user_id_excluir);
+            printf("Usu√°rio com ID %s exclu√≠do logicamente.\n", user_id_excluir);
+            fclose(arquivo);
             break;
         }
     }
@@ -151,10 +248,10 @@ int excluirUsuarioPorId(const char *nomeArquivo, const char *user_id_excluir) {
     fclose(arquivo);
 
     if (!encontrado) {
-        printf("Usu·rio com ID %s n„o encontrado ou j· excluÌdo.\n", user_id_excluir);
+        printf("Usu√°rio com ID %s n√£o encontrado ou j√° exclu√≠do.\n", user_id_excluir);
         return -1;
     }
-
+    free(produto);
     return 0;
 }
 
@@ -182,7 +279,7 @@ void compactarArquivo(char *nomeArquivo) {
 }
 
 
-// FunÁ„o para preencher o arquivo bin·rio com dados do struct
+// Fun√ß√£o para preencher o arquivo bin√°rio com dados do struct
 void preencherBinario(User *user, Produto *produto, FILE *arqUser, FILE *arqProd) {
     fwrite(user, sizeof(User), 1, arqUser);
     fwrite(produto, sizeof(Produto), 1, arqProd);
@@ -207,7 +304,30 @@ void verifica_arq(char *nomeArquivo){
     fclose(arquivo);
 }
 
-// FunÁ„o para ler e imprimir o arquivo bin·rio
+void le_elo(char* nome_arq_ext,int elo){
+    Produto produto;
+    FILE* arq_ext = fopen(nome_arq_ext,"rb");
+    if(arq_ext == NULL){
+        printf("erro ao abrir arquivo\n");
+    }
+    fseek(arq_ext,elo*sizeof(Produto),SEEK_SET);
+
+    fread(&produto, sizeof(Produto), 1, arq_ext);
+        //printf("Serial: %lu\n", produto.serial);
+        printf("Product ID: %s\n", produto.product_id);
+        printf("Category ID: %s\n", produto.category_id);
+        printf("Category code: %s\n", produto.category_code);
+        printf("Brand: %s\n", produto.brand);
+        printf("Price: %s USD\n", produto.price);
+        printf("-------------------------------\n");
+    if(produto.elo != -1){
+        le_elo(nome_arq_ext,produto.elo);
+    }
+    else
+        return;
+}
+
+// Fun√ß√£o para ler e imprimir o arquivo bin√°rio
 void lerArquivoBin(char *nomeArquivo, int aux) {
     FILE *arquivo = fopen(nomeArquivo, "rb");
     if (arquivo == NULL) {
@@ -218,15 +338,18 @@ void lerArquivoBin(char *nomeArquivo, int aux) {
     if (aux == 0) { // Ler Users
         User user;
         while (fread(&user, sizeof(User), 1, arquivo) == 1) {
-            if(user.excluido != 0){
+
+
             //printf("Serial: %lu\n", user.serial);
             printf("Event time: %s\n", user.event_time);
             printf("Event type: %s\n", user.event_type);
             printf("User ID: %s\n", user.user_id);
             printf("User Session: %s\n", user.user_session);
-            //printf("Elo: %ld\n", user.elo);
+            printf("Product ID: %s\n", user.product_id);
+            printf("Excluir: %d\n", user.excluido);
             printf("-------------------------------\n");
-            }
+
+
         }
     } else {
         if (aux == 1){ // Ler Produtos
@@ -239,12 +362,15 @@ void lerArquivoBin(char *nomeArquivo, int aux) {
                     printf("Brand: %s\n", produto.brand);
                     printf("Price: %s USD\n", produto.price);
                     printf("-------------------------------\n");
+
+                if(produto.elo != -1){
+                le_elo("arqProdExt.bin", produto.elo);
+                }
             }
         }
     }
     fclose(arquivo);
 }
-
 
 void Extrai_csv(char* nome_arq,char* nome_arqUser,char* nome_arqProd){
     FILE *arq = fopen(nome_arq, "r");
@@ -255,13 +381,13 @@ void Extrai_csv(char* nome_arq,char* nome_arqUser,char* nome_arqProd){
 
     FILE *arqUser = fopen(nome_arqUser, "wb");
     if (arqUser == NULL) {
-        printf("Erro ao abrir o arquivo bin·rio de usu·rios\n");
+        printf("Erro ao abrir o arquivo bin√°rio de usu√°rios\n");
         return;
     }
 
     FILE *arqProd = fopen(nome_arqProd, "wb");
     if (arqProd == NULL) {
-        printf("Erro ao abrir o arquivo bin·rio de produtos\n");
+        printf("Erro ao abrir o arquivo bin√°rio de produtos\n");
         return;
     }
 
@@ -270,18 +396,22 @@ void Extrai_csv(char* nome_arq,char* nome_arqUser,char* nome_arqProd){
     int linha_lida = 0;
 
 
-    fgets(linha, sizeof(linha), arq); // Ignorar a primeira linha (cabeÁalho)
+    fgets(linha, sizeof(linha), arq); // Ignorar a primeira linha (cabe√ßalho)
     printf("\nExtraindo Arquivos do CSV...\n");
-    while (fgets(linha, sizeof(linha), arq)&& linha_lida < 2930 ) { // Retirar o limite quando quiser processar o arquivo inteiro && linha_lida < 320930
+
+    while (fgets(linha, sizeof(linha), arq) && linha_lida < 2930 ) { // Retirar o limite quando quiser processar o arquivo inteiro && linha_lida < 320930 && linha_lida < 2930
     User user;
+    memset(&user, 0, sizeof(User));
     Produto produto;
 
     user.serial = serial;
+    user.excluido = 0;
+    produto.elo = -1;
     produto.serial = serial;
 
     char *token;
 
-    // Verifica o token de cada campo e assegura que n„o esteja vazio ou mal formatado
+    // Verifica o token de cada campo e assegura que n√£o esteja vazio ou mal formatado
     token = strtok(linha, ",");
     if (token == NULL) continue; // Pular linhas vazias ou mal formatadas
     strncpy(user.event_time, token, TAMANHO_EVENT_TIME - 1);
@@ -296,6 +426,8 @@ void Extrai_csv(char* nome_arq,char* nome_arqUser,char* nome_arqProd){
     if (token == NULL) continue;
     strncpy(produto.product_id, token, TAMANHO_PRODUCT_ID - 1);
     produto.product_id[TAMANHO_PRODUCT_ID - 1] = '\0';
+    strncpy(user.product_id, token, TAMANHO_PRODUCT_ID - 1);
+    user.product_id[TAMANHO_PRODUCT_ID - 1] = '\0';
 
     token = strtok(NULL, ",");
     if (token == NULL) continue;
@@ -327,7 +459,9 @@ void Extrai_csv(char* nome_arq,char* nome_arqUser,char* nome_arqProd){
     strncpy(user.user_session, token, TAMANHO_USER_SESSION - 1);
     user.user_session[TAMANHO_USER_SESSION - 1] = '\0';
 
-    // Preencher os dados bin·rios
+
+
+    // Preencher os dados bin√°rios
     preencherBinario(&user, &produto, arqUser, arqProd);
 
     serial++;
@@ -340,13 +474,12 @@ void Extrai_csv(char* nome_arq,char* nome_arqUser,char* nome_arqProd){
     printf("Registros extraidos com sucesso!\n");
 }
 
-
 void OrdenaEMerge(char* nome_arqProd){
 
     printf("\nParticionando...\n");
     FILE *arqProdOrdena = fopen(nome_arqProd, "rb");
     if(arqProdOrdena == NULL){
-        printf("erro ao abrir arquivo para ordenaÁ„o");
+        printf("erro ao abrir arquivo para ordena√ß√£o");
         return;
     }
     int part_num = 0;
@@ -354,7 +487,7 @@ void OrdenaEMerge(char* nome_arqProd){
 
     Produto *buffer = malloc(BUFFER_SIZE * sizeof(Produto));  // Aloca dinamicamente
     if (buffer == NULL) {
-    printf("Erro ao alocar memÛria.\n");
+    printf("Erro ao alocar mem√≥ria.\n");
     return;
     };
     size_t contador_leitura;
@@ -371,7 +504,7 @@ void OrdenaEMerge(char* nome_arqProd){
     free(buffer);
     printf("Arquivo Ordenado!\n");
 
-    // Remover arquivos tempor·rios
+    // Remover arquivos tempor√°rios
     for (int i = 0; i < part_num; i++) {
         char temp_filename[20];
         snprintf(temp_filename, sizeof(temp_filename), "%s%d.bin", PREFIXO_ARQ, i);
@@ -388,24 +521,24 @@ unsigned long hash(char *str) {
     return hash;
 }
 
-// FunÁ„o para verificar se j· existe um product_id
+// Fun√ß√£o para verificar se j√° existe um product_id
 int jaExiste(char product_id[], unsigned long *hashTable, int tamanhoHash) {
     unsigned long pos = hash(product_id) % tamanhoHash;
     return hashTable[pos] != 0;
 }
 
-// FunÁ„o para adicionar um product_id ‡ tabela hash
+// Fun√ß√£o para adicionar um product_id √† tabela hash
 void adicionarTabela(char product_id[], unsigned long *hashTable, int tamanhoHash) {
     unsigned long pos = hash(product_id) % tamanhoHash;
-    hashTable[pos] = 1; // 1 indica que o product_id est· presente
+    hashTable[pos] = 1; // 1 indica que o product_id est√° presente
 }
 
-// FunÁ„o para remover produtos duplicados de um array
+// Fun√ß√£o para remover produtos duplicados de um array
 void remove_repetidos(char* nomeArquivo) {
 
     FILE *arquivo = fopen(nomeArquivo, "rb");
     FILE *arquivoNovo = fopen("arqProdatt.bin", "wb");
-    FILE *arquivoUsers = fopen("arqUser.bin", "rb+"); // tem que fazer algo pra ele n„o excluir o conte˙do antigo
+    FILE *arquivoUsers = fopen("arqUser.bin", "rb+"); // tem que fazer algo pra ele n√£o excluir o conte√∫do antigo
 
     if (arquivo == NULL || arquivoNovo == NULL || arquivoUsers == NULL) {
         printf("Erro ao abrir arquivo para remover repetidos\n");
@@ -414,7 +547,7 @@ void remove_repetidos(char* nomeArquivo) {
 
     Produto *produtoBuffer = malloc(BUFFER_SIZE * sizeof(Produto));
     if (produtoBuffer == NULL) {
-        printf("Erro ao alocar memÛria 1\n");
+        printf("Erro ao alocar mem√≥ria 1\n");
         return;
     }
 
@@ -422,11 +555,11 @@ void remove_repetidos(char* nomeArquivo) {
         size_t lidos = fread(produtoBuffer, sizeof(Produto), BUFFER_SIZE, arquivo);
         if (lidos == 0) break; // fim do arquivo
 
-        int tamanhoHash = BUFFER_SIZE * 2;  // Tamanho da tabela hash, aproximadamente o dobro do n˙mero de produtos
+        int tamanhoHash = BUFFER_SIZE * 2;  // Tamanho da tabela hash, aproximadamente o dobro do n√∫mero de produtos
         unsigned long *hashTable = calloc(tamanhoHash, sizeof(unsigned long));
 
         if (hashTable == NULL) {
-            printf("Erro ao alocar memÛria para a tabela hash.\n");
+            printf("Erro ao alocar mem√≥ria para a tabela hash.\n");
             free(produtoBuffer);
             return;
         }
@@ -435,7 +568,7 @@ void remove_repetidos(char* nomeArquivo) {
 
         Produto *produtosSemRepetidos = malloc(BUFFER_SIZE * sizeof(Produto));
         if (produtosSemRepetidos == NULL) {
-            printf("Erro ao alocar memÛria 2\n");
+            printf("Erro ao alocar mem√≥ria 2\n");
             free(hashTable);
             free(produtoBuffer);
             return;
@@ -445,7 +578,7 @@ void remove_repetidos(char* nomeArquivo) {
         long enderecoaux;
         User *user = malloc(sizeof(User));
         if (user == NULL) {
-            printf("Erro ao alocar memÛria para usu·rio.\n");
+            printf("Erro ao alocar mem√≥ria para usu√°rio.\n");
             free(hashTable);
             free(produtosSemRepetidos);
             free(produtoBuffer);
@@ -454,13 +587,13 @@ void remove_repetidos(char* nomeArquivo) {
         User useraux;
         for (size_t i = 0; i < lidos; i++) {
             if (!jaExiste(produtoBuffer[i].product_id, hashTable, tamanhoHash)) {
-            // Se n„o existe, adiciona ‡ tabela hash e ao novo array
+            // Se n√£o existe, adiciona √† tabela hash e ao novo array
                 adicionarTabela(produtoBuffer[i].product_id, hashTable, tamanhoHash);
                 produtoBuffer[i].endereco = produtoBuffer[i].serial * sizeof(User);
                 enderecoUsuario = produtoBuffer[i].endereco;
                 produtosSemRepetidos[countSemRepetidos++] = produtoBuffer[i];
-            } else { // Se j· existe, atualize o elo dos usu·rios
-                // Buscar o usu·rio na posiÁ„o correta
+            } else { // Se j√° existe, atualize o elo dos usu√°rios
+                // Buscar o usu√°rio na posi√ß√£o correta
                 fseek(arquivoUsers, enderecoUsuario, SEEK_SET);
                 fread(user, sizeof(User), 1, arquivoUsers);
 
@@ -469,18 +602,18 @@ void remove_repetidos(char* nomeArquivo) {
                 user->elo = produtoBuffer[i].serial * sizeof(User);
                 enderecoUsuario = user->elo;
 
-                // Reposiciona o cursor no arquivo para atualizar o registro do usu·rio
+                // Reposiciona o cursor no arquivo para atualizar o registro do usu√°rio
                 fseek(arquivoUsers, -sizeof(User), SEEK_CUR);
                 fwrite(user, sizeof(User), 1, arquivoUsers);
             }
         }
 
-        fwrite(produtosSemRepetidos, sizeof(Produto), countSemRepetidos, arquivoNovo);  // Escreve os produtos sem repetiÁ„o
-        free(hashTable);  // Libera a memÛria alocada para a tabela hash
-        free(produtosSemRepetidos);  // Agora pode liberar apÛs a escrita no arquivo
+        fwrite(produtosSemRepetidos, sizeof(Produto), countSemRepetidos, arquivoNovo);  // Escreve os produtos sem repeti√ß√£o
+        free(hashTable);  // Libera a mem√≥ria alocada para a tabela hash
+        free(produtosSemRepetidos);  // Agora pode liberar ap√≥s a escrita no arquivo
     }
 
-    free(produtoBuffer);  // Libera o buffer do produto apÛs a leitura completa
+    free(produtoBuffer);  // Libera o buffer do produto ap√≥s a leitura completa
     fclose(arquivo);
     fclose(arquivoNovo);
     fclose(arquivoUsers);
@@ -488,63 +621,18 @@ void remove_repetidos(char* nomeArquivo) {
     printf("Remocao de repetidos concluida.\n");
 }
 
-Produto *pesquisa_binaria(char *nome_arquivo,char *product_id) {
-    FILE* arquivo = fopen(nome_arquivo,"rb");
-    if(arquivo == NULL){
-        printf("Erro na abertura de arquivo para pesquisa bin·ria");
-        return 0;
-    }
 
-    fseek(arquivo,0,SEEK_END);
-    long tamanho_bytes = ftell(arquivo);  // Tamanho total do arquivo em bytes
-    int total_produtos = tamanho_bytes / sizeof(Produto);  // N˙mero total de produtos
-    fseek(arquivo, 0, SEEK_SET);
-
-    int inicio = 0;
-    int fim = total_produtos - 1;
-
-    Produto *produto = malloc(sizeof(Produto));
-
-    while (inicio <= fim) {
-        int meio = inicio + (fim - inicio) / 2;
-
-
-        fseek(arquivo,meio*sizeof(Produto),SEEK_SET);
-
-        fread(produto,sizeof(Produto),1,arquivo);
-
-        // Comparar o product_id no meio com o product_id buscado
-        int comparacao = strcmp(produto->product_id, product_id);
-
-        if (comparacao == 0) {
-            // Encontrou o produto
-            fclose(arquivo);
-            return produto;
-        } else if (comparacao < 0) {
-            //product_id buscado È maior, ajustar inÌcio
-            inicio = meio + 1;
-        } else {
-            //product_id buscado È menor, ajustar fim
-            fim = meio - 1;
-        }
-    }
-
-    //n„o encontrou
-    fclose(arquivo);
-    free(produto);
-    return NULL;
-}
 
 void pesquisa_binaria_serial(char *nome_arquivo,unsigned long serial) {
     FILE* arquivo = fopen(nome_arquivo,"rb");
     if(arquivo == NULL){
-        printf("Erro na abertura de arquivo para pesquisa bin·ria");
-        return 0;
+        printf("Erro na abertura de arquivo para pesquisa bin√°ria");
+        return;
     }
 
     fseek(arquivo,0,SEEK_END);
     long tamanho_bytes = ftell(arquivo);  // Tamanho total do arquivo em bytes
-    int total_users = tamanho_bytes / sizeof(User);  // N˙mero total de produtos
+    int total_users = tamanho_bytes / sizeof(User);  // N√∫mero total de produtos
     fseek(arquivo, 0, SEEK_SET);
 
     int inicio = 0;
@@ -562,7 +650,7 @@ void pesquisa_binaria_serial(char *nome_arquivo,unsigned long serial) {
         int comparacao = user->serial - serial;
 
         if (comparacao == 0) {
-            // Encontrou o usu·rio
+            // Encontrou o usu√°rio
             fclose(arquivo);
             if(user->excluido != 1){
             printf("Serial: %lu\n", user->serial);
@@ -570,26 +658,27 @@ void pesquisa_binaria_serial(char *nome_arquivo,unsigned long serial) {
             printf("Event type: %s\n", user->event_type);
             printf("User ID: %s\n", user->user_id);
             printf("User Session: %s\n", user->user_session);
+            printf("Product ID: %s\n", user->product_id);
             }
             else{
-                printf("\nUsu·rio n„o encontrado!\n");
+                printf("\nUsu√°rio n√£o encontrado!\n");
             }
             return;
         }
         else if (comparacao < 0) {
-            //product_id buscado È maior, ajustar inÌcio
+            //product_id buscado √© maior, ajustar in√≠cio
             inicio = meio + 1;
             }
             else {
-                //product_id buscado È menor, ajustar fim
+                //product_id buscado √© menor, ajustar fim
                 fim = meio - 1;
             }
     }
 
-    //n„o encontrou
+    //n√£o encontrou
     fclose(arquivo);
     free(user);
-    printf("\nUsu·rio n„o encontrado!\n");
+    printf("\nUsu√°rio n√£o encontrado!\n");
 }
 
 void consulta_clientes_por_product_id(char* nome_prod, char* nome_user, char* product_id){
@@ -601,12 +690,12 @@ void consulta_clientes_por_product_id(char* nome_prod, char* nome_user, char* pr
 
     User* user = malloc(sizeof(User));
 if (user == NULL) {
-    printf("Erro ao alocar memÛria para o usu·rio.\n");
+    printf("Erro ao alocar mem√≥ria para o usu√°rio.\n");
     return;
 }
     Produto* produto = pesquisa_binaria(nome_prod,product_id);
     if (produto == NULL) {
-        printf("Produto n„o encontrado.\n");
+        printf("Produto n√£o encontrado.\n");
         free(user);
         fclose(arquivoUser);
         return;
@@ -619,26 +708,27 @@ if (user == NULL) {
 
     fseek(arquivoUser,produto->endereco,SEEK_SET);
     if (fread(user, sizeof(User), 1, arquivoUser) != 1) {
-        printf("Erro ao ler usu·rio do arquivo.\n");
-        free(user);  // Libere a memÛria antes de sair
+        printf("Erro ao ler usu√°rio do arquivo.\n");
+        free(user);  // Libere a mem√≥ria antes de sair
         fclose(arquivoUser);
         return;
     }
-    printf("\n\tUsu·rios que pesquisaram por esse produto:\n");
+    printf("\n\tUsu√°rios que pesquisaram por esse produto:\n");
     if(user->excluido != 1){
             printf("Serial: %lu\n", user->serial);
             printf("Event time: %s\n", user->event_time);
             printf("Event type: %s\n", user->event_type);
             printf("User ID: %s\n", user->user_id);
             printf("User Session: %s\n", user->user_session);
+            printf("Product ID: %s\n", user->product_id);
             //printf("Elo: %ld\n", user->elo);
             printf("-------------------------------\n");
     }
     while(user->elo != 0){
             fseek(arquivoUser,user->elo,SEEK_SET);
             if (fread(user, sizeof(User), 1, arquivoUser) != 1) {
-                printf("Erro ao ler usu·rio do arquivo.\n");
-                free(user);  // Libere a memÛria antes de sair
+                printf("Erro ao ler usu√°rio do arquivo.\n");
+                free(user);  // Libere a mem√≥ria antes de sair
                 fclose(arquivoUser);
                 return;
             }
@@ -648,6 +738,7 @@ if (user == NULL) {
             printf("Event type: %s\n", user->event_type);
             printf("User ID: %s\n", user->user_id);
             printf("User Session: %s\n", user->user_session);
+            printf("Product ID: %s\n", user->product_id);
             //printf("Elo: %ld\n", user->elo);
             printf("-------------------------------\n");
             }
@@ -679,16 +770,102 @@ void arq_user_ordenado_por_ID_produto(char *nome_user,char *nome_prod){
 
 }
 
+void inclui_user(char* nome_prod, char* nome_user){
+
+
+    time_t agora = time(NULL);
+    struct tm *tempoLocal = localtime(&agora);
+
+    // Alocar espa√ßo para a string
+    char *dataHoraStr = malloc(TAMANHO_EVENT_TIME * sizeof(char)); // 20 caracteres s√£o suficientes para "dd/mm/aaaa hh:mm:ss"
+    if (dataHoraStr == NULL) {
+        printf("Erro ao alocar mem√≥ria.\n");
+        return;
+    }
+
+    // Formatar a data e hora
+    strftime(dataHoraStr, 20, "%d-%m-%Y %H:%M:%S", tempoLocal);
+
+    User user;
+    Produto produto;
+
+    printf("Digite o tipo do evento: \n");
+    scanf("%s",user.event_type);
+    printf("Digite o user ID: \n");
+    scanf("%s",user.user_id);
+    printf("Digite o user Session: \n");
+    scanf("%s",user.user_session);
+    printf("Digite o product ID: \n");
+    scanf("%s",user.product_id);
+    strcpy(produto.product_id,user.product_id);
+    printf("Digite o category ID: \n");
+    scanf("%s",produto.category_id);
+    printf("Digite o category code: \n");
+    scanf("%s",produto.category_code);
+    printf("Digite a marca: \n");
+    scanf("%s",produto.brand);
+    printf("Digite o pre√ßo: \n");
+    scanf("%s",produto.price);
+
+    FILE *arqProd = fopen(nome_prod,"rb+");
+    FILE *arqUser = fopen(nome_user,"rb+");
+
+    if(arqProd == NULL || arqUser == NULL){
+        printf("Erro ao abrir arquivos");
+        return;
+    }
+
+
+
+
+    strcpy(user.event_time,dataHoraStr);
+
+
+
+
+
+    Produto aux;
+    fseek(arqProd, 0, SEEK_END);
+    long tamanhoArquivo = ftell(arqProd);
+
+    if (tamanhoArquivo >= sizeof(Produto)) {
+        fseek(arqProd, -sizeof(Produto), SEEK_END);
+        fread(&aux, sizeof(Produto), 1, arqProd);
+        produto.serial = aux.serial;
+        user.serial = aux.serial;
+    }
+    else {
+        // Tratamento caso o arquivo esteja vazio
+        produto.serial = 0;
+        user.serial = 0;
+    }
+
+    printf("Serial: %lu\n", user.serial);
+            printf("Event time: %s\n", user.event_time);
+            printf("Event type: %s\n", user.event_type);
+            printf("User ID: %s\n", user.user_id);
+            printf("User Session: %s\n", user.user_session);
+            printf("Product ID: %s\n", user.product_id);
+
+
+
+
+    fwrite(&user,sizeof(User),1,arqUser);
+    fwrite(&produto,sizeof(Produto),1,arqProd);
+
+}
+
 
 int main() {
     char* nome_arq = "arquivo_modificado.csv";
     char* nome_arqUser = "arqUser.bin";
     char* nome_arqProd = "arqProd.bin";
+    char* nome_ext = "arqProdExt.bin";
 
         if (_setmaxstdio(2048) == -1) {
         printf("Erro ao aumentar o limite de arquivos abertos.\n");
     }
-    // PartiÁıes e Merge
+    // Parti√ß√µes e Merge
 
     Produto* resultado = malloc(sizeof(Produto));
     char entrada[11] = "";
@@ -713,7 +890,7 @@ int main() {
                 rename("arqProdatt.bin", nome_arqProd);
                 break;
             case 3:
-                printf("\nUsu·rios:\n");
+                printf("\nUsu√°rios:\n");
                 lerArquivoBin(nome_arqUser, 0);
                 break;
             case 4:
@@ -729,11 +906,11 @@ int main() {
                 resultado = pesquisa_binaria(nome_arqProd, entrada);
                 if (resultado != NULL) {
                     printf("Produto encontrado:\n");
-                    printf("ID: %s, Category code: %s, Brand:%s, Price: %s USD, EndereÁo: %ld\n", resultado->product_id, resultado->category_code, resultado->brand,resultado->price, resultado->endereco);
-                    free(resultado);  // Libera a memÛria alocada
+                    printf("ID: %s, Category code: %s, Brand:%s, Price: %s USD\n", resultado->product_id, resultado->category_code, resultado->brand,resultado->price);
+                    free(resultado);  // Libera a mem√≥ria alocada
                 }
                 else {
-                    printf("Produto n„o encontrado.\n");
+                    printf("Produto n√£o encontrado.\n");
                 }
                 break;
             case 7:
@@ -747,8 +924,14 @@ int main() {
                 pesquisa_binaria_serial(nome_arqUser,entrada_serial);
                 break;
             case 9:
-                verifica_arq(nome_arqProd);
+                inclui_user(nome_arqProd,nome_ext);
                 break;
+            case 11:
+                printf("\nDigite o ID a ser excluido:\n");
+                scanf("%s",entrada);
+                excluirUsuarioPorId(nome_arqUser,entrada,nome_arqProd);
+                break;
+
         }
 
 
