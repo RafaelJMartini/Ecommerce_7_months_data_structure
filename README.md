@@ -35,21 +35,21 @@ Caso queira testar com poucos registros, na função que ordena o CSV nós temos
 Código:
 
 Estrutura arqUser
-serial (CHAVE)
-event_time
-event_type
-user_id
-user_session
-elo
-excluido
+serial (CHAVE) |
+event_time |
+event_type |
+user_id |
+user_session |
+product_id |
+elo | 
+excluido | 
 
 Estrutura arqProd
-serial
-product_id (CHAVE)
-category_id
-category_code
-brand
-price
-endereco
-excluido
-elo
+serial |
+product_id (CHAVE) | 
+category_id |
+category_code |
+brand | 
+price |
+endereco |
+elo |
