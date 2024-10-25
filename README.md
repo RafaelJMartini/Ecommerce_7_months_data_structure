@@ -1,5 +1,5 @@
 CONTEXTO
-Primeiramente alteramos o arquivo original para que no lugar de ,, tenhamos ,N/A, pois a forma como tokenizamos (strtok) não estava pegando todos os elementos
+Primeiramente alteramos o arquivo original para que no lugar de ,, tenhamos , , pois a forma como tokenizamos (strtok) não estava pegando todos os elementos
 
 Após isso é feito a leitura desse arquivo alterado e separamos o que é uma informação do usuário e o que é do produto. Fazemos isso enquanto colocamos uma variável serial, que será nossa chave primária de usuários e nos ajudará a indexar o arquivo de produtos
 Com ambos arquivos devidamente separados, temos que excluir as repetições existentes no arquivo de produtos e indexar com o arquivo de usuários por meio do campo endereço
@@ -13,7 +13,7 @@ Para remoção utilizamos a remoção lógica, no aquivo de produtos não remove
 
 
 Notas para o funcionamento adequado:
-Antes de rodar o programa, certifique-se de rodar primeiramente o nosso complemento que transforma as “,,” em “,N/A,“ para que o programa faça a leitura correta de todos os campos
+Antes de rodar o programa, certifique-se de rodar primeiramente o nosso complemento que transforma as “,,” em “, ," para que o programa faça a leitura correta de todos os campos
 
 Veja também o BUFFER_SIZE, sua memória principal deve aguentar BUFFER_SIZE * sizeof(Produto)
 Um BUFFER_SIZE maior resultará em um tempo menor de execução das funções de ordenar e remover
