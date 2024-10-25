@@ -1,4 +1,4 @@
-Funções de Menu e Auxiliares:
+Funções de Menu e Auxiliar:
 
   menu(): Exibe um menu com as opções disponíveis para o usuário. Essas opções envolvem a extração de dados, visualização de arquivos, verificação de registros, consulta de produtos, etc.
   
@@ -9,9 +9,9 @@ Funções de Menu e Auxiliares:
 
 Funções para Manipulação de Arquivos e Ordenação:
 
-  ordena(): Ordena uma partição de produtos lida em memória usando qsort e salva em um arquivo temporário. Essa função é chamada várias vezes para dividir um grande arquivo em partes menores, ordenando cada uma delas        antes de realizar um merge.
+  ordena(): Ordena uma partição de produtos lida em memória usando qsort e salva em um arquivo temporário. Essa função é chamada várias vezes para dividir um grande arquivo em partes menores, ordenando cada uma delas antes de realizar um merge.
   
-  merge_files(): Realiza a fusão (merge) dos arquivos temporários ordenados em um arquivo final, mantendo a ordenação. Usa um array de buffers para ler uma entrada de cada arquivo temporário e grava as entradas em ordem     no arquivo final.
+  merge_files(): Realiza a fusão (merge) dos arquivos temporários ordenados em um arquivo final, mantendo a ordenação. Usa um array de buffers para ler uma entrada de cada arquivo temporário e grava as entradas em ordem no arquivo final.
 
 
 
