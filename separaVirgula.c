@@ -9,9 +9,7 @@ void substituirVirgulasDuplas(char *linha) {
 
         if (linha[i] == ',' && linha[i+1] == ',') {
             linha_modificada[j++] = ',';
-            linha_modificada[j++] = 'N';
-            linha_modificada[j++] = '/';
-            linha_modificada[j++] = 'A';
+            linha_modificada[j++] = ' ';
         } else {
             linha_modificada[j++] = linha[i];
         }
